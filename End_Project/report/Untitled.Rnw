@@ -1,20 +1,61 @@
 \documentclass{article}
-
-\usepackage{polski}
-% skomentowana dla MAC wersja {inputenc}
- \usepackage[utf8]{inputenc}
-% \usepackage[T1]{fontenc}
-%\usepackage[cp1250]{inputenc}
-\usepackage{polski}
+\usepackage[utf8]{inputenc}
 \usepackage{amssymb}
 \usepackage{color}
 \usepackage{amsmath}
 \usepackage{Sweave}
 \usepackage{enumerate}
 \usepackage{hyperref}
+\usepackage{graphicx}
 
-\title{Wpisz tutaj tytuł swojego projektu}
-\author{\textbf{indeks, Imię NAZWISKO}, czwartek $11^{30}$\\ 
+% \usepackage{subfig}
+\graphicspath{ {./images/} }
+\usepackage[margin=0.5in]{geometry}
+\usepackage{gensymb}
+\usepackage{textcomp}
+\usepackage{siunitx}
+\usepackage{wrapfig}
+\usepackage{lipsum}
+\usepackage{float}
+\usepackage{hyperref}
+
+% Inicjalizacja projektu (Importowanie danych i czyszczenie daty)
+<<echo=FALSE>>==
+# imports
+library(rstudioapi)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(psych)
+library(relaimpo)
+library(GGally)
+library(tidyverse)
+library(hrbrthemes)
+library(viridis)
+library(vcd)
+library(e1071)
+library(ggpubr)
+library(fitdistrplus)
+library(stats4)
+library(car)
+library(uniftest)
+library(rcompanion)
+
+# ----------------------------------------------
+
+# Reading data from .csv
+
+data = (
+  read.csv(
+    "https://raw.githubusercontent.com/dimamik/AGH_Statistics/master/End_Project/src/insurance.csv",
+    header = TRUE
+    
+  )
+)
+@
+
+\title{Analiza kosztów medycznych w zależnosci od parametrów czlowieka}
+\author{\textbf{404838, Dzmitry Mikialevich}, czwartek $11^{30}$\\ 
 \textit{AGH, Wydział Informatyki Elektroniki i Telekomunikacji}\\
 \textit{Rachunek prawdopodobieństwa i statystyka 2020/2021}}
 \date{Kraków, \today}
@@ -23,62 +64,932 @@
 \begin{document}
 \SweaveOpts{concordance=TRUE}
 \maketitle
+%% Here is the new environment called centerfig
+\newenvironment{centerfig}
+{\begin{figure}[H]\centering}
+{\end{figure}}
+
 
 \textit{Ja, niżej podpisany(na) własnoręcznym podpisem deklaruję, że przygotowałem(łam) przedstawiony do oceny projekt samodzielnie i żadna jego część nie jest kopią pracy innej osoby.}
 \begin{flushright}
-{............................................}
+{Dzmitry Mikialevich}
 \end{flushright}
 
-\section{Streszczenie raportu}
-Raport powstał w oparciu o analizę danych dotyczących ...
+\tableofcontents
 
-\section{Opis danych}
-Dane do projektu pochodzą ze strony \href{url}{\texttt{http://www.stooq.pl}}. Są one ...
+\newpage
 
-\section{Analiza danych}
-Poniżej zamieszczono przykładowe wywołania prostych formuł z pakietu R, których składnia może przydać się w projekcie.
-\subsection{Wydobywanie podstawowych informacji z danych}
-Działania na liczbach, wartości funkcji w punkcie, zaokrąglanie, działania logiczne.
-<<>>==
-5+7
-3*4
-@
-\subsection{Estymatory przedziałowe}
-Możemy też rysować, np. wykres funkcji $f(x)=2x+2$ oraz $g(x)=x^2$.
-<<label=wykresyfg,fig=TRUE>>==
-f = function(x){2*x+2}
-g = function(x){x**2}
-curve(f, from=-1, to=10, xlab="argumenty", ylab="wartosci", col="red")
-curve(g, from=-1, to=10, xlab="x", ylab="y", col="blue", lwd=4, add=TRUE)
-@
-
-Równie dobrze można narysować gęstość rozkłądu normalnego standardowego.
-<<label=wykresyNORM,fig=TRUE>>==
-curve(dnorm(x,0,1), from=-4, to=4, xlab="x", ylab="f(x)", col="green", lwd=2)
-abline(h=0.2,col="red")
-@
-
-\subsection{Testowanie hipotez}
-Testować będziemy hipotezę zerową {\bf{H0}}: ... wobec hipotezy alternatywnej {\bf{H1}}: ...
-Korzystam ze statystyki $t$-Studenta postaci
-\begin{align*}
-t=\sum_{i=1}^n\frac{licznik X_i}{mianownik^2}
-\end{align*}
-
-\subsection{Regresja}
-
-W ten sposób można zapisać równania w \LaTeX, znakiem AND wyrównujemy je, a dwa slashe służą do przejścia do kolejnej linii.
-\begin{align*}
-y&=a\cdot x+b+\varepsilon,\\
-z&=3\cdot y.
-\end{align*}
-
-\section{Wnioski}
-Wnioski płynące z przeprowadzonej analizy, są następujące:
+\section{Introduction}
 \begin{itemize}
-\item wniosek pierwszy,
-\item wniosek drugi,
-\item i kolejne.
+\item Streszczenie i opis danych w raporcie są napisane w języku polskim, natomiast pozostała część jest napisana w języku angielskim, jak bardziej wygodnym dla autora, tak i dla kompilatora sweave.
+\item Dla zapoznania się ze szczegółami wykonania obliczeń proszę o zapoznanie się z raportem oraz dołączonym plikiem mainScript.R, zawierającym pełny opis wszystkich przeprowadzonych badań
+\end{itemize}
+
+\section{Summary of the report}
+Raport powstał w oparciu o analizę danych dotyczących kosztow medycznych, zrobiony przez firme ubezpieczeniowa. \newline
+Jako wynik analizy, znalezione byly nastepujace zaleznosci:
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data,aes(x=age, y = charges)) + 
+  geom_point(aes(color = smoker, size = bmi, alpha = .05)) +
+  ggtitle("Summary on Charges")
+@
+\caption{Summary Plot}
+\end{centerfig}
+
+\begin{itemize}
+  \item Koszty leczenia liniowo zależą od wieku
+  \item Koszty leczenia zależą od tego, pali osoba czy nie. W przypadku osób palących z "normalnym:" BMI (około 30), koszty leczenia są 2 razy większe
+niż dla osób niepalących z normalnym BMI, natomiast obosy palące z wysokim albo bardzo nizkim BMI płacą 4 razy więcej niż osoby "zkwykłe"
+  \item Koszty leczenia zależą od BMI, ale nie w takim wielkim stopniu, jak od palenia
+  \item Koszty leczenia nie zależą od płci.
+\end{itemize}
+Jako wynik badania powstały kilka modeli, i nastepujaca byla wybrana przez autora jako najlepsza:
+model<- lm (charges ~ age + smoker+ bmi + SmokerWithHighBMI,data), gdzie SmokerWithHighBMI to wartość, wskazująca, czy osoba pali i  ma BMI>30, albo nie w przeciwnym przypadku.
+\ref{sec:Third}
+\newline
+Ten model daje p-value: < 2.2e-16, Adjusted R-squared: 0.8607, ale Residual Standard Error nie jest postaci normalnej.
+Z pewnym przybliżeniem, można się zgodzić na taki model.
+
+
+
+
+\section{Data description}
+Dane do projektu pochodzą ze strony \href{url}{\texttt{https://www.kaggle.com/mirichoi0218/insurance}}. Skladaja sie z 1338 rekordow, zawierajacych nastepujaca informacje:
+\begin{itemize}
+  \item age: wiek beneficjenta pierwotnego
+  \item sex: płeć kontrahenta ubezpieczeniowego, kobieta, mężczyzna
+  \item bmi: Wskaźnik masy ciała, zapewniający zrozumienie ciała, masy, które są stosunkowo wysokie lub niskie w stosunku do wzrostu,
+  obiektywny wskaźnik masy ciała \(kg/m^2\) na podstawie stosunku wzrostu do masy ciała, najlepiej 18,5 do 24,9
+  \item children: Liczba dzieci objętych ubezpieczeniem zdrowotnym / Liczba osób na utrzymaniu
+  \item smoker: Palenie
+  \item region: obszar mieszkalny beneficjenta w USA, na północnym wschodzie, południowym wschodzie, południowym zachodzie i północnym zachodzie.
+  \item charges: Indywidualne koszty leczenia rozliczane przez ubezpieczenie zdrowotne
+\end{itemize}
+
+
+\section{Analysis of single variables}
+In this section we are going to perform analysis of single variables to discover their properties and to verify that data makes sens and is well-distributed.
+\subsection{Smoking}
+Let's take a look at plot of smokers:
+
+
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data) + 
+  theme_calc() +
+  geom_bar(mapping = aes(x = smoker))
+@
+\caption{Plot of smokers}
+\end{centerfig}
+
+As we can see, there are more smokers, than non-smokers, which applies us to be more carefull while making decision
+
+\paragraph{Point Estimation of Population Proportion \newline} 
+At this moment we can try to estimate the Proportion of smokers to non-smokers in America, having that small sample
+
+<<>>==
+f = sum(data$smoker=='yes')
+n = length(data$smoker)
+f/n
+@
+
+The point estimate of smoking people proportion in survey is 20\%, which is pretty close to our expectations (According to the CDC, as of 2015, a total of 15.1\% of U.S. adults (16.7\% of men and 13.6\% of women) smoke)
+
+\subsection{Gender}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data) + 
+  theme_calc() +
+  geom_bar(mapping = aes(x = sex))
+@
+\caption{Plot of genders}
+\end{centerfig}
+As we can see we have almost equal distribution of man and women in survey
+\paragraph{Point Estimation of Gender Proportion \newline} 
+
+<<>>==
+  f = sum(data$sex=='male')
+  n = length(data$sex)
+  f/n
+@
+
+As we can see, the point estimate of male gender proportion in survey is 50\%, which also meets our expectations, meaning the data is accurate and well-distributed, comparing to population.
+
+\subsection{Age}
+\paragraph{Basic number properties \newline} 
+
+<<>>==
+describeBy(data$age)
+@
+Analysing which, we can outline these properties:
+
+\begin{itemize}
+  \item[$-$] \textbf{n} - number of items
+  \item[$-$] \textbf{mean} - mean of sample
+  \item[$-$] \textbf{sd} - standard deviation ( a measure of the amount of variation)
+  \item[$-$] \textbf{median} -  median of sample ( 50th percentile)
+  \item[$-$] \textbf{trimmed} - trimmed mean, in other words this value is more stable than the mean, because it is calculated like:
+    \begin{enumerate}
+      \item Cut off 10\% from left side of distribution
+      \item Cut off 10\% from right side of distribution
+      \item Calculate average from the remaining 80\% 
+    \end{enumerate}
+  \item[$-$] \textbf{mad} - mean absolute deviation ( variability similar to the sum of squares)
+  \item[$-$] \textbf{min} - minimum value
+  \item[$-$] \textbf{max} - maximum value
+  \item[$-$] \textbf{range} -  the difference between the max and min values
+  \item[$-$] \textbf{skew} - \(A =\frac{\mu_3}{\sigma^3} \) a measure of asymmetry in the distribution
+  \begin{enumerate}
+    \item \( A==0 \Rightarrow\) distribution is symmetrical 
+    \item \( A>0 \Rightarrow\) distribution has positive skew 
+    \item \( A<0 \Rightarrow\) distribution negative skew 
+    \end{enumerate}  
+  \item[$-$] \textbf{kurtosis} - \(Kurt[X] = \frac{\mu_4}{\sigma^4}\) a measure of the peakedness of the probability distribution
+    \begin{enumerate}
+    \item \(Kurt[X]==0 \Rightarrow\) rounded peak of a normal distribution (Mesokurtic)
+    \item \(Kurt[X]>0 \Rightarrow\) a sharper peak (Leptokurtic)
+    \item \(Kurt[X]<0 \Rightarrow \) a flatter peak (Platykurtic)
+    \end{enumerate}  
+  \item[$-$] \textbf{se} - sample standard error
+\end{itemize}
+
+\paragraph{Average deviation \newline} 
+
+<<>>==
+avg.dev <- function(x)
+  mean(abs(x - mean(x)))
+c(avg.dev(data$age))
+@
+
+\paragraph{Quantiles (minimum, lower-hinge, median, upper-hinge, maximum) \newline} 
+<<>>==
+fivenum(data$age)
+@
+
+\paragraph{(upper-hinge - lower-hinge) \newline} 
+<<>>==
+IQR(data$age)
+@
+
+\paragraph{Central, not absolute moments \newline} 
+<<>>==
+moment(data$age,0.25)
+moment(data$age,0.5)
+moment(data$age,0.75)
+moment(data$age,1)
+@
+
+
+
+\paragraph{Plots \newline} 
+Below we can see different types of plots to help us in analyzing the sample.
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data, aes("",y=age)) + 
+  geom_boxplot(fill="slateblue") +
+  theme_classic()
+@
+\caption{BoxPlot of age}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data, aes(x=age)) + 
+  geom_histogram()+
+  scale_x_continuous(breaks = seq(0, 155, 2))+
+  scale_y_continuous(breaks = seq(0, 80, 5))+
+  labs(title="Histogram for age", x="age", y="Number of people")
+@
+\caption{Histogram of age}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot( data, aes(x=age)) +
+  geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) +
+  ggtitle("Probability distribution of age") +
+  theme(plot.title = element_text(hjust = 0.5))
+@
+\caption{Probability distribution of age}
+\end{centerfig}
+
+As we can see, we've got evenly uniformly distributed variable, 
+So next analysis can pretend to be accurate
+
+
+
+\subsection{Testing BMI distribution}
+\paragraph{Basic number properties \newline} 
+<<>>==
+describeBy(data$bmi)
+@
+Analysing which, we can outline the same properties as in previous one.
+\paragraph{Average deviation \newline} 
+
+<<echo=FALSE>>==
+avg.dev <- function(x)
+  mean(abs(x - mean(x)))
+c(avg.dev(data$bmi))
+@
+\paragraph{Quantiles (minimum, lower-hinge, median, upper-hinge, maximum) \newline} 
+<<echo=FALSE>>==
+fivenum(data$bmi)
+@
+
+\paragraph{ (upper-hinge - lower-hinge) \newline} 
+<<echo=FALSE>>==
+IQR(data$bmi)
+@
+
+\paragraph{ Central, not absolute moments \newline} 
+<<echo=FALSE>>==
+moment(data$bmi,0.25)
+moment(data$bmi,0.5)
+moment(data$bmi,0.75)
+moment(data$bmi,1)
+@
+
+\paragraph{Plots \newline} 
+Below we can see different types of plots to help us in analyzing the sample.
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data, aes("",y=bmi)) + 
+  geom_boxplot(fill="slateblue") +
+  theme_classic()
+@
+\caption{BoxPlot of bmi}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(subset(data,smoker =='yes'), aes(x=bmi)) + 
+  geom_histogram()+
+  labs(title="Histogram for bmi", x="BMI", y="Count")
+@
+\caption{Histogram of bmi}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot( data, aes(x=bmi)) +
+  geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) +
+  ggtitle("Probability distribution of bmi") +
+  theme(plot.title = element_text(hjust = 0.5))
+@
+\caption{Probability distribution of bmi}
+\end{centerfig}
+
+As we can see, we've got something that looks like normal distribution,
+so let's take a closer look at it.
+
+\paragraph{Visual methods -> Density plot of BMI\newline}
+
+\begin{centerfig}
+<<fig=TRUE>>==
+ggplot( data, aes(x=bmi)) +
+  geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) +
+  ggtitle("Probability distribution of bmi") +
+  theme(plot.title = element_text(hjust = 0.5))
+@
+\caption{Density plot of BMI}
+\end{centerfig}
+
+The plot looks like normal, so continue our analyzing, now using qqplot:
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggqqplot(data$bmi)
+@
+\caption{Plot of BMI}
+\end{centerfig}
+
+As we can see there, at the begining there is small deviation from line of normal distribution, but still it's worth testing.
+
+
+\subsection{Children}
+Let's see whether charges depend on children
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data,aes(as.factor(children),charges)) + geom_boxplot(fill = c(2:7)) +
+  theme_classic() +  xlab("children") +
+  ggtitle("Medical charges by children")
+@
+\caption{Charges on children}
+\end{centerfig}
+
+
+\subsection{Charges}
+
+\paragraph{Basic number properties \newline} 
+
+<<>>==
+describeBy(data$charges)
+@
+
+\paragraph{Average deviation \newline} 
+
+<<echo=FALSE>>==
+avg.dev <- function(x)
+  mean(abs(x - mean(x)))
+c(avg.dev(data$charges))
+@
+\paragraph{Quantiles (minimum, lower-hinge, median, upper-hinge, maximum) \newline} 
+<<echo=FALSE>>==
+fivenum(data$charges)
+@
+
+\paragraph{ (upper-hinge - lower-hinge) \newline} 
+<<echo=FALSE>>==
+IQR(data$charges)
+@
+
+\paragraph{ Central, not absolute moments \newline} 
+<<echo=FALSE>>==
+moment(data$charges,0.25)
+moment(data$charges,0.5)
+moment(data$charges,0.75)
+moment(data$charges,1)
+@
+
+\paragraph{Plots \newline} 
+Below we can see different types of plots to help us in analyzing the sample.
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data, aes("",y=charges)) + 
+  geom_boxplot(fill="slateblue") +
+  theme_classic()
+@
+\caption{BoxPlot of charges}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(subset(data,smoker =='yes'), aes(x=charges)) + 
+  geom_histogram()+
+  labs(title="Histogram for charges", x="charges", y="Count")
+@
+\caption{Histogram of charges}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot( data, aes(x=charges)) +
+  geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8) +
+  ggtitle("Probability distribution of charges") +
+  theme(plot.title = element_text(hjust = 0.5))
+@
+\caption{Probability distribution of charges}
+\end{centerfig}
+
+
+\section{Testing}
+
+
+
+\subsection{Quick Theory Review on Testing}
+\paragraph{Two-samples t-test\newline}
+In t-test, the null hypothesis is that the mean of the two samples is equal.
+So the alternative hypothesis is that the means are different or, \(|m_1 - m_2| > 0\)
+So basically, we want to take or reject the null hypothesis with some confidence interval (the range of values within which the difference may lie)
+Also, t-test gives us a \(p-value\), probability of us, making wrong decision
+Having small \(p-value\) suggests having small probability for null-hypothesis being true.
+
+\paragraph{Shapiro-Wilk’s method\newline}
+Method, based on correlation between the data and the corresponding "normal points"
+Null-hypothesis is that distribution is normal and we reject the null hypothesis if p < 0.05, meaning that distribution is more likely not normal.
+Wilk’s test should not be significant to meet the assumption of normality.
+
+\paragraph{One-sample t-test\newline}
+Assumptions:
+\begin{itemize}
+  \item Population is normally distributed
+  \item Independent samples
+  \item Random sample via all population distribution
+  \item Continuous
+  \end{itemize}
+Defining null-hypothesis, we assume that mean of our population is equal to a hypothezed value
+
+
+
+\subsection{Is BMI Normally Distributed?}
+In the case of BMI, we can see some outliers, and it can be a point where we stop testing and say that the model doesn't meet the Assumptions, but we will go further.
+\newline
+
+First of all let's apply Shapiro-Wilk’s test (assuming that Assumptions are met)
+
+<<>>==
+shapiro.test(data$bmi)
+@
+
+Having p-value = 2.605e-05, we can reject the null hypothesis, that distribution is normal, applying from that non-normality of our sample distribution.
+
+
+Also we can try t-test, with default arguments:
+\newline
+<<>>==
+t.test(data$bmi, y = NULL,
+       alternative = c("two.sided", "less", "greater"),
+       mu = 0, paired = FALSE, var.equal = FALSE,
+       conf.level = 0.95)
+@
+
+Having tested with t.test (p-value < 2.2e-16) we can conclude that it's highly significant that BMI is not distributed normally
+
+\paragraph{Density Estimate of data \newline}
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(density(data$bmi),main="Density estimate") 
+@
+\caption{Dencity estimaate}
+\end{centerfig}
+
+\subsection{Do charges depend on gender?}
+
+
+<<>>==
+mans_charge <- subset(data,sex=="male" & smoker=='no')
+females_charge <- subset(data,sex=="female"& smoker=='no')
+@
+
+As we see on boxplots below, visually they have the same distribution, and median
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data = data,aes(sex,charges,fill=sex)) +
+  geom_boxplot() +
+  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+  ggtitle("Smokers and non-smokers BoxPlots") +
+  xlab("")
+@
+\caption{BoxPlot of Smokers and non-smokers}
+\end{centerfig}
+
+Let's show it using t-test
+
+First check for assumptions:
+Distribution is not normal, so we need to stop in there, but we will continue due to insterest, understanding that we can't conclude anything from this testing
+
+<<>>==
+test <- t.test( mans_charge$charges, females_charge$charges
+)
+test
+@
+
+So because p-value is < 0.07 we could assume (if distribution was normal)right that they are from same population. Which would mean that it doesn't matter which gender is the person, whose charge we are analysing.
+
+
+
+\section{Interval Estimators for single variables}
+
+\subsection{BMI}
+
+We will use The One Sample t Test -> determines whether the sample mean is statistically different from a known or hypothesized population mean. Assumptions where discussed previously, so let's just check them:
+\begin{itemize}
+  \item \textbf{Independent} - OK
+  \item \textbf{Random} - OK
+  \item \textbf{Continuous} - OK
+  \item \textbf{Normally distributed} - According to Shapiro-Wilk’s test, formally, we don't have normally distributed BMI, so we can't apply t-test, but because difference between our distribution and normal is acceptably small, let's assume normality
+  \end{itemize}
+
+<<>>==
+t.test(data$bmi)
+@
+Our confidence interval is [30.33635, 30.99045], mean of x is 30.6634 and p-value < 2.2e-16, meaning, that we can reject null-hypothesis, that sample and population having same mean, and accept alternative, that means are different and mean of population lies in [30.33635, 30.99045] with probability of 95 percent
+
+Now let's make some calculus by ourselves and see, can we get the same result:
+\newline
+Math part:
+\begin{itemize}
+  \item \textbf{n} - number of elements in sample
+  \item \textbf{\(\mu = \frac{1}{n}\sum_{i=1}^{n}(x_i)\)} - mean of sample
+  \item \textbf{\(\sigma = \sqrt{\sigma^2}\)} - standard deviation
+  \item \textbf{\(\sigma_{x} = \frac{\sigma}{sqrt(n)}\)} - standard error
+  \item \textbf{\(z = \Phi(0.025)\)} - critical value Z, normal distribution in 0.025 (As we want to get 95\% interval of confidence, we need to take 2.5\% from left and right)
+  \item \textbf{\([l=\mu-z*\sigma_{x},r = \mu+z* \sigma_{x}]\)} - Confidence interval 
+  \end{itemize}
+R part:
+<<>>==
+n <- length(data$bmi)
+mu <- mean(data$bmi)
+s <- sd(data$bmi)
+err <- s/sqrt(n)
+z <- qnorm(0.025, lower.tail = F) 
+lower_ci <- mu - z*err
+upper_ci <- mu + z*err
+interval_estimation <- c("estimate" = mu, "lower95%" = lower_ci, "upper95%" = upper_ci)
+round(interval_estimation, digits = 5)
+@
+
+\section{Dependencies between data samples}
+
+Now let's check for dependencies. First of all build Correlogram to find out correlation dependencies
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggpairs(data, title="Correlogram") 
+
+@
+\caption{Correlogram}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggcorr(data, method = c("everything", "pearson"))
+@
+\caption{Correlation}
+\end{centerfig}
+
+As we can see, the  age has the highest correlation with charges (0.299)***,
+Also BMI has (0.198)*** correlation, which can give us some expectancies to 
+Future, where *** means Pr(>|t|) close to 0
+
+\subsection{Smoking and charges}
+
+Looks like we have more smokers than non-smokers, lets have a look
+How it affects out charge statistics
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+  ggplot(data = data,aes(smoker,charges,fill=smoker)) +
+    geom_boxplot() +
+    scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+    geom_jitter(color="black", size=0.4, alpha=0.9) +
+    ggtitle("Smokers and non-smokers BoxPlots") +
+    xlab("")
+@
+\caption{BoxPLot on smoking}
+\end{centerfig}
+
+Looks like more data about non-smokers doesn't change the picture, 
+but we can trust it more
+And we can visually divide data from smokers into 2 groups, lets find out 
+why
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data,aes(x=age, y = charges)) + 
+  geom_point(aes(color = smoker, size = bmi, alpha = .05)) +
+  ggtitle("Charges by age")
+@
+\caption{Age and Charges}
+\end{centerfig}
+
+From that we can find out that smokers with high BMI pay more than smokers with low
+Also there looks like a linear dependency between age and charges, but we will find it out later
+
+So lets plot the age and the charges for non-smokers
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(subset(data,smoker =='yes') , aes(x=age, y=charges)) +
+  geom_point() +
+  geom_smooth(method=lm , color="red", se=FALSE)
+@
+\caption{Plot of age and charges}
+\end{centerfig}
+
+So we can see that charges are greater, as a line-dependency is visually rising faster
+
+Now lets for our interest find out at what age is the most 'smoker' age
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(subset(data,smoker =='yes'), aes(x=age)) + 
+  geom_histogram()+
+  scale_x_continuous(breaks = seq(0, 155, 2))+
+  labs(title="Histogram for most 'smoker' age", x="Age", y="Count")
+@
+\caption{Histogram for most 'smoker' age"}
+\end{centerfig}
+
+So around 19 is the most smoking age (based on our data)
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+  ggplot(data,aes(x=age, y = charges)) + 
+  geom_point(aes(color = smoker)) + 
+  ggtitle("Charges and age")
+@
+\caption{Charges on age}
+\end{centerfig}
+
+Summing up on smoking
+
+So based on the analysis we can say, that smokers in average pay more for treatment
+then non-smokers, smokers can be divided into two groups - those with normal BMI (~30)
+and those with high BMI, the second group is more affected by deceases and in
+the end pays more for treatment. (Or insurance is more in our case)
+
+
+\subsection{Gender and charges}
+
+Let's see is gender connected with charges
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data,aes(x= sex, y = charges)) + 
+  geom_boxplot() +
+  ggtitle("Charges")
+@
+\caption{Gender and charges}
+\end{centerfig}
+
+So it's not correlated, and gender doesn't affect charges
+
+\subsection{BMI and charges}
+Summing up we have 
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data,aes(x=age, y = charges)) + 
+  geom_point(aes(color = smoker, size = bmi, alpha = .05)) +
+  ggtitle("Charges vs Age")
+@
+\caption{Age and Charges}
+\label{fig:BestPlot}
+\end{centerfig}
+
+<<>>==
+cor(data$bmi,data$charges)
+@
+
+Correlation is 0.198 which means that there is a positive correlation between two variables, 
+but it is weak and likely unimportant.
+
+Let's divide bmi data into obese and not (More than 30 bmi is obese)
+
+<<>>==
+bmiMoreOrLessThan30 <- ifelse(data$bmi>=30,"yes","no")
+ggplot(data = data,aes(bmiMoreOrLessThan30,charges)) + geom_boxplot(fill = c(2:3)) + ggtitle("Obesity")
+@
+
+As we can see there is no big difference in insurance costs, but 
+those with high BMI has more outliers, which means hard deseases etc.
+
+
+\section{Building Regression a model}
+
+Let's build linear model using all possible variables and analyse the result
+
+\subsection{First model}
+<<>>==
+model_all <- lm(charges ~ age + sex + bmi + children + smoker,data)
+summary(model_all)
+@
+
+Analyse the results for group of data to figure out which needs to be removed
+And which relationships are the strongest 
+
+Let's remind what those columns mean, and apply it to our results:
+
+\begin{itemize}
+  \item \textbf{Standard Error} - measures the average amount 
+  that the coefficient estimates vary from the actual average value of our response variable
+  \begin{itemize}
+    \item \textbf{Expectations} -> lower number relative to estimation coefficients
+    \item \textbf{Reality} -> For age and bmi this values are low enough
+  \end{itemize}
+  \item \textbf{T Value} -> Is a measure of how many standard deviations our coefficient estimate is far away from 0.
+  \begin{itemize}
+    \item \textbf{Expectations} -> If it is far away from 0, we can reject null-hypothesis (declare that relationship)
+    exists
+    \item \textbf{Reality} -> For age,bmi and smokers it seems that some kind of relationship exists, but
+    The strongest one for a first look is with smokers (Need to mention that we are talking about
+    Relationship with Charges)
+  \end{itemize}
+    \item \textbf{Reality}
+  \begin{itemize}
+    \item \textbf{Expectations} -> lower number relative to estimation coefficients
+    \item \textbf{Reality} -> For age and bmi this values are low enough
+  \end{itemize}
+  \item \textbf{Pr(> |t|) } -> Relates to the probability of observing any value equal or larger than t.
+  In other words, indicates, the possibility of value/relation been observed by chance
+  \begin{itemize}
+    \item \textbf{Expectations} -> less than 0.05
+    \item \textbf{Reality} -> For all except gender is less than 0.05, which satisfies us
+  \end{itemize}
+    \item \textbf{Residual standard error} -> measure of quality of linear regression fit the data (In other words it is the average amount that the response (age/bmi etc.) will deviate from the true regression line.)
+  \begin{itemize}
+    \item \textbf{Expectations} -> Lower, comparing with estimate, better.
+    Also expecting it to be normal
+    \item \textbf{Reality} -> Only for smokers we can see low difference, or about 25\% error on guessing
+  \end{itemize}
+    \item \textbf{Multiple R-squared} - > Measure of how well the model is fitting the actual data.
+  \begin{itemize}
+    \item \textbf{Expectations} -> Close to 1
+    \item \textbf{Reality} -> 74\% , not bad, but can be better
+  \end{itemize}
+    \item \textbf{Adjusted R-squared} ->Adjusts Multiple R-squared for the number of variables considered
+  \begin{itemize}
+    \item \textbf{Expectations} -> Close to 1
+    \item \textbf{Reality} -> 0.7488 = 74\%
+  \end{itemize}
+  \item \textbf{F-statistics} -> indicator of whether there is a relationship between our predictor and the response variables. 
+  \begin{itemize}
+    \item \textbf{Expectations} -> Further from 1 the better (comparing with data size and predictors)
+    \item \textbf{Reality} -> 798
+  \end{itemize}
+\end{itemize}
+
+\subsection{Second model}
+So to start with, I'd remove not really suitable sex and children
+
+<<>>==
+model<- lm(charges ~ age + bmi + smoker, data)
+summary(model)
+@ 
+
+
+And now check weather Residual standard error is following normal distribution
+
+\begin{centerfig}
+<< fig=TRUE>>==
+res <- resid(model)
+qqnorm(res)
+qqline(res)
+@
+\caption{Residual Standard Error}
+\end{centerfig}
+
+As we can see, Residual standard error is not following normal distribution, 
+and R-squared can still be better.
+
+\subsection{Third model}
+\label{sec:Third}
+Now I suggest looking at Smoking closely, because it affects charges the most,
+But as we saw in previous analysis, smokers can be devided into two categories
+Those with low and high BMI. I suggest us doing that, by adding new variable -> SmokerWithHighBMI
+
+<<>>==
+data$SmokerWithHighBMI <- ifelse(data$bmi>30 
+  & data$smoker=="yes","yes","no")
+describeBy(data$charges,data$SmokerWithHighBMI)
+@
+
+Now build the model
+
+<<>>==
+model<- lm (charges ~ age  + smoker+ bmi + SmokerWithHighBMI,data)
+summary(model)
+@
+
+Analysing as in previous model, we can come to 
+Adjusted R-squared is 85,8\%, which is higher than in previous model
+which gives us the possibility to say that data is fitting the model
+Errors are lower, t-values are greater, Pr( >|t|) is slightly bigger 
+on average, which, makes our results more random, but for all
+except BMI it's still less than 0.05, which is normal
+
+
+Now lets build Residual standard error and check if is 
+Following normal distribution
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+  res <- resid(model)
+  qqnorm(res)
+  qqline(res)
+  AIC(model)
+  BIC(model)
+@
+\caption{Residual standard error}
+\end{centerfig}
+
+Let's also check for plots of our model parameters
+
+Interpreting of results:
+\begin{itemize}
+  \item Residuals vs Fitted -> Shows if residuals have non-linear patterns. 
+  In our case we have a bit clustered left side which means that there are 
+  Some outliers not covered by model 
+  \item Normal Q-Q -> Shows if residuals are normally distributed
+  As we can see there is a part when data stops following the normal distribution
+  Which means that our model doesn't cover all the outliers, and 
+  Error while defining them can be significant !!! Which means that we need to work
+  More on model
+  \item Scale-Location -> The assumption of equal variance
+  Data is not spread randomly on the line, which is not quite good
+  \item Residuals vs Leverage -> This plot helps us to find influential cases (i.e., subjects) if any. 
+  Watch if Cook's distance is high
+
+\end{itemize}
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,1)
+
+@
+\caption{Residuals vs Fitted}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,2)
+
+@
+\caption{Normal Q-Q}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,3)
+
+@
+\caption{Scale-Location}
+\end{centerfig}
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,4)
+
+@
+\caption{Residuals vs Leverage}
+\end{centerfig}
+
+
+Because we are not realy satisfied with result, let's search more:
+
+\subsection{Fourth model}
+\label{sec:Fourth}
+<<>>==
+model<- lm (log(charges) ~ age  + age^2 + 
+              smoker+ bmi + SmokerWithHighBMI + children,data)
+summary(model)
+@
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+ggplot(data, aes("",y=age)) + 
+  geom_boxplot(fill="slateblue") +
+  theme_classic()
+@
+\caption{Residuals vs Fitted}
+\end{centerfig}
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,1)
+
+@
+\caption{Residuals vs Fitted}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,2)
+
+@
+\caption{Normal Q-Q}
+\end{centerfig}
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,3)
+
+@
+\caption{Scale-Location}
+\end{centerfig}
+
+
+\begin{centerfig}
+<< echo=FALSE, fig=TRUE>>==
+plot(model,4)
+
+@
+\caption{Residuals vs Leverage}
+\end{centerfig}
+
+As we can see, data on graphics is better distributed, but we still have problems with Normal Q-Q, which is not normal  
+Residuals are essentially the difference between the actual observed response values. So we need them to be normally distributed across 0
+
+
+
+
+\subsection{Summing up on models}
+
+Choosing the best model from those, that we have built, I would choose the Third One \ref{sec:Third}. Because it has averagely better results comparuing to others, but 
+still it doesn't fit all the data, espessially those with high BMI. 
+
+
+
+\section{Conclusion}
+As we can see on the Figure \ref{fig:BestPlot} there are next dependencies
+\begin{itemize}
+  \item Charges depend lineary on Age
+  \item Charges depend on smoking status, you pay, 2 or 4 (if you also have high BMI) times more than those with middle BMI (around 30) and non-smoking
+  \item Charges depend on BMI, but BMI affects less
+  \item Charges doesn't depend on gender
 \end{itemize}
 
 \end{document}

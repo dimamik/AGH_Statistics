@@ -1,0 +1,7 @@
+{
+    "name": "Compile Rnw files",
+    "tools": [
+      "rnw2tex",
+      "latexmk"
+    ]
+  }
